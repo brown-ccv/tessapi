@@ -147,6 +147,16 @@ public:
 		return std::tuple<std::string, std::list<FontAttrLabel>>(fullText, textAttrGroups);
 	}
 
+	std::string GetText()
+	{
+		std::unique_ptr<char[]> text(this->GetUTF8Text());
+		if (text.get() != nullptr)
+		{
+			return std::string(text.get());
+		}
+		else return "";
+	}
+
 	std::tuple<int, int> TotalConfidence()
 	{
 		std::unique_ptr<int[]> confidence_list(this->AllWordConfidences());

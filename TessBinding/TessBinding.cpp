@@ -56,6 +56,7 @@ PYBIND11_PLUGIN(TessBinding) {
 		.def("SetRectangle", &TessAPI_Wrapper::SetRectangle_wrap, "Set the bounding rectangle tesseract will use when reading text."
 			" ((x,y) is the top left corner of that box)",
 			py::arg("x"), py::arg("y"), py::arg("w"), py::arg("h"))
+		.def("GetText", &TessAPI_Wrapper::GetText, "Gets plain OCRed text.")
 		.def("GetTextWithAttrs", &TessAPI_Wrapper::GetTextWithAttrs, "Gets OCRed text with font attribute information (i.e. categorized as PLAIN, BOLD, ITALIC, or UNDER_LINED & font point size)\n"
 																	 "Return value is a tuple with the OCRed text and a list of FontAttrLabels with start, length, attr and point_size members");
 	   //.def("SetPageSegMode", &TessAPI_Wrapper::SetPageSegMode, "Set the page segment mode.")
