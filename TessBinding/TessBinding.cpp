@@ -36,9 +36,10 @@ PYBIND11_PLUGIN(TessBinding) {
 		.export_values();
 	
 	py::class_<FontAttrLabel>(m, "FontAttrLabel")
-		.def(py::init<FontAttribute, uint16_t, uint16_t>())
-		.def_readwrite("attr", &FontAttrLabel::attr)
-		.def_readwrite("start", &FontAttrLabel::start)
+		.def(py::init<FontAttribute, uint16_t, uint16_t, uint16_t>())
+		.def_readwrite("attr", &FontAttrLabel::attr, "font attribute category (PLAIN, BOLD, ITALIC, or UNDER_LINED)")
+		.def_readwrite("point_size", &FontAttrLabel::point_size, "font size")
+		.def_readwrite("start", &FontAttrLabel::start, "start position, inclusive")
 		.def_readwrite("length", &FontAttrLabel::length);
 
 	//TODO: bind some functions for getting tesseract config values
@@ -55,8 +56,8 @@ PYBIND11_PLUGIN(TessBinding) {
 		.def("SetRectangle", &TessAPI_Wrapper::SetRectangle_wrap, "Set the bounding rectangle tesseract will use when reading text."
 			" ((x,y) is the top left corner of that box)",
 			py::arg("x"), py::arg("y"), py::arg("w"), py::arg("h"))
-		.def("GetTextWithAttrs", &TessAPI_Wrapper::GetTextWithAttrs, "Gets OCRed text with font attribute information (i.e. categorized as PLAIN, BOLD, ITALIC, or UNDER_LINED)\n"
-																	 "Return value is a tuple with the OCRed text and a list of FontAttrLabels with start, length and attr members");
+		.def("GetTextWithAttrs", &TessAPI_Wrapper::GetTextWithAttrs, "Gets OCRed text with font attribute information (i.e. categorized as PLAIN, BOLD, ITALIC, or UNDER_LINED & font point size)\n"
+																	 "Return value is a tuple with the OCRed text and a list of FontAttrLabels with start, length, attr and point_size members");
 	   //.def("SetPageSegMode", &TessAPI_Wrapper::SetPageSegMode, "Set the page segment mode.")
 	   //.def("GetPageSegMode", &TessAPI_Wrapper::GetPageSegMode, "Get the page segment mode.");
 

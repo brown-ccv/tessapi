@@ -24,13 +24,15 @@ enum FontAttribute
 
 struct FontAttrLabel
 {
-	FontAttrLabel(FontAttribute attr, uint16_t start, uint16_t length) :
+	FontAttrLabel(FontAttribute attr, uint16_t point_size, uint16_t start, uint16_t length) :
 		attr(attr),
+		point_size(point_size),
 		start(start),
 		length(length)
 	{ }
 
-	FontAttribute attr = PLAIN;
+	FontAttribute attr;
+	uint16_t point_size;
 	uint16_t start; // inclusive
 	uint16_t length;
 };
@@ -83,6 +85,7 @@ public:
 
 		std::string fullText;
 		FontAttribute groupAttr;
+		int groupPSize;
 		uint16_t groupStart = 0;
 		uint16_t groupSize = 0;
 
@@ -91,7 +94,7 @@ public:
 		// iterate through OCRed words
 		do
 		{
-			// we only care about isBold, isItalic, and isUnderLined
+			// we only care about isBold, isItalic, isUnderLined, and pointsize
 			bool isBold, isItalic, isUnderLined, isMonoSpace, isSerif, isSmallCaps;
 			int pointsize, fond_id;
 
@@ -103,17 +106,19 @@ public:
 
 			if (firstGo)
 			{
+				groupPSize = pointsize;
 				groupAttr = txtAttr;
 				firstGo = false;
 			}
 			
-			if (txtAttr != groupAttr) // end this group and start a new one
+			if (txtAttr != groupAttr || pointsize != groupPSize) // end this group and start a new one
 			{
-				textAttrGroups.push_back(FontAttrLabel(groupAttr, groupStart, groupSize));
+				textAttrGroups.push_back(FontAttrLabel(groupAttr, groupPSize, groupStart, groupSize));
 
 				groupStart += groupSize;
 				groupSize = 0;
 				groupAttr = txtAttr;
+				groupPSize = pointsize;
 			}
 			
 			fullText += text.get();
@@ -130,7 +135,7 @@ public:
 		} while (itr->Next(tesseract::RIL_WORD));
 
 		// the last group will not be appended in the loop because the text will end before the group does
-		textAttrGroups.push_back(FontAttrLabel(groupAttr, groupStart, groupSize));
+		textAttrGroups.push_back(FontAttrLabel(groupAttr, groupPSize, groupStart, groupSize));
 		
 		return std::tuple<std::string, std::list<FontAttrLabel>>(fullText, textAttrGroups);
 	}
