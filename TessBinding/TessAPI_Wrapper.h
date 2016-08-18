@@ -111,7 +111,7 @@ public:
 				firstGo = false;
 			}
 			
-			if (txtAttr != groupAttr || pointsize != groupPSize) // end this group and start a new one
+			if (txtAttr != groupAttr || abs(groupPSize - pointsize) >=  groupPSize * 0.15) // end this group and start a new one
 			{
 				textAttrGroups.push_back(FontAttrLabel(groupAttr, groupPSize, groupStart, groupSize));
 
