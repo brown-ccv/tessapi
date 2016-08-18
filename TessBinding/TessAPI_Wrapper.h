@@ -79,64 +79,71 @@ public:
 	std::tuple<std::string, std::list<FontAttrLabel>> GetTextWithAttrs()
 	{
 		this->Recognize(0);
-		
+
 		std::unique_ptr<tesseract::ResultIterator> itr(this->GetIterator());
 		std::list<FontAttrLabel> textAttrGroups;
-
 		std::string fullText;
-		FontAttribute groupAttr;
-		int groupPSize;
-		uint16_t groupStart = 0;
-		uint16_t groupSize = 0;
 
-		bool firstGo = true;
-
-		// iterate through OCRed words
-		do
+		// check if iterator is invalid
+		if (itr.get() != nullptr)
 		{
-			// we only care about isBold, isItalic, isUnderLined, and pointsize
-			bool isBold, isItalic, isUnderLined, isMonoSpace, isSerif, isSmallCaps;
-			int pointsize, fond_id;
+			FontAttribute groupAttr;
+			int groupPSize;
+			uint16_t groupStart = 0;
+			uint16_t groupSize = 0;
 
-			itr->WordFontAttributes(&isBold, &isItalic, &isUnderLined, &isMonoSpace, &isSerif, &isSmallCaps, &pointsize, &fond_id);
+			bool firstGo = true;
 
-			FontAttribute txtAttr = isBold ? BOLD : isItalic ? ITALIC : isUnderLined ? UNDER_LINED : PLAIN;
-
-			std::unique_ptr<char[]> text(itr->GetUTF8Text(tesseract::RIL_WORD));
-
-			if (firstGo)
+			// iterate through OCRed words
+			do
 			{
-				groupPSize = pointsize;
-				groupAttr = txtAttr;
-				firstGo = false;
-			}
-			
-			if (txtAttr != groupAttr || abs(groupPSize - pointsize) >=  groupPSize * 0.15) // end this group and start a new one
-			{
-				textAttrGroups.push_back(FontAttrLabel(groupAttr, groupPSize, groupStart, groupSize));
+				// we only care about isBold, isItalic, isUnderLined, and pointsize
+				bool isBold, isItalic, isUnderLined, isMonoSpace, isSerif, isSmallCaps;
+				int pointsize, fond_id;
 
-				groupStart += groupSize;
-				groupSize = 0;
-				groupAttr = txtAttr;
-				groupPSize = pointsize;
-			}
-			
-			fullText += text.get();
-			groupSize += (uint16_t)strlen(text.get());
+				itr->WordFontAttributes(&isBold, &isItalic, &isUnderLined, &isMonoSpace, &isSerif, &isSmallCaps, &pointsize, &fond_id);
 
-			// if not the last word of the entire block of text
-			if (!itr->IsAtFinalElement(tesseract::RIL_BLOCK, tesseract::RIL_WORD))
-			{
-				// add appropriate whitespace (" " or "\n") depending on whether this is the end of a line or not
-				fullText += itr->IsAtFinalElement(tesseract::RIL_TEXTLINE, tesseract::RIL_WORD) ? "\n" : " ";
-				groupSize++;
-			}
+				FontAttribute txtAttr = isBold ? BOLD : isItalic ? ITALIC : isUnderLined ? UNDER_LINED : PLAIN;
 
-		} while (itr->Next(tesseract::RIL_WORD));
+				if (firstGo)
+				{
+					groupPSize = pointsize;
+					groupAttr = txtAttr;
+					firstGo = false;
+				}
 
-		// the last group will not be appended in the loop because the text will end before the group does
-		textAttrGroups.push_back(FontAttrLabel(groupAttr, groupPSize, groupStart, groupSize));
-		
+				if (txtAttr != groupAttr || abs(groupPSize - pointsize) >= groupPSize * 0.15) // end this group and start a new one
+				{
+					textAttrGroups.push_back(FontAttrLabel(groupAttr, groupPSize, groupStart, groupSize));
+
+					groupStart += groupSize;
+					groupSize = 0;
+					groupAttr = txtAttr;
+					groupPSize = pointsize;
+				}
+
+				std::unique_ptr<char[]> text(itr->GetUTF8Text(tesseract::RIL_WORD));
+
+				if (text.get() != nullptr)
+				{
+					fullText += text.get();
+					groupSize += (uint16_t)strlen(text.get());
+				}
+
+				// if not the last word of the entire block of text
+				if (!itr->IsAtFinalElement(tesseract::RIL_BLOCK, tesseract::RIL_WORD))
+				{
+					// add appropriate whitespace (" " or "\n") depending on whether this is the end of a line or not
+					fullText += itr->IsAtFinalElement(tesseract::RIL_TEXTLINE, tesseract::RIL_WORD) ? "\n" : " ";
+					groupSize++;
+				}
+
+			} while (itr->Next(tesseract::RIL_WORD));
+
+			// the last group will not be appended in the loop because the text will end before the group does
+			textAttrGroups.push_back(FontAttrLabel(groupAttr, groupPSize, groupStart, groupSize));
+		}
+
 		return std::tuple<std::string, std::list<FontAttrLabel>>(fullText, textAttrGroups);
 	}
 
@@ -148,10 +155,13 @@ public:
 		int total_confidence = 0;
 		int num_words = 0;
 
-		while (*confidence_iter != -1)
+		if (confidence_iter != nullptr)
 		{
-			total_confidence += *(confidence_iter++);
-			num_words++;
+			while (*confidence_iter != -1)
+			{
+				total_confidence += *(confidence_iter++);
+				num_words++;
+			}
 		}
 
 		return std::tuple<int, int>(total_confidence, num_words);
