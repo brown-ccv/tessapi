@@ -85,64 +85,70 @@ public:
 		std::string fullText;
 
 		// check if iterator is invalid
-		if (itr.get() != nullptr)
+		if (itr.get() == nullptr)
 		{
-			FontAttribute groupAttr;
-			int groupPSize;
-			uint16_t groupStart = 0;
-			uint16_t groupSize = 0;
-
-			bool firstGo = true;
-
-			// iterate through OCRed words
-			do
-			{
-				// we only care about isBold, isItalic, isUnderLined, and pointsize
-				bool isBold, isItalic, isUnderLined, isMonoSpace, isSerif, isSmallCaps;
-				int pointsize, fond_id;
-
-				itr->WordFontAttributes(&isBold, &isItalic, &isUnderLined, &isMonoSpace, &isSerif, &isSmallCaps, &pointsize, &fond_id);
-
-				FontAttribute txtAttr = isBold ? BOLD : isItalic ? ITALIC : isUnderLined ? UNDER_LINED : PLAIN;
-
-				if (firstGo)
-				{
-					groupPSize = pointsize;
-					groupAttr = txtAttr;
-					firstGo = false;
-				}
-
-				if (txtAttr != groupAttr || abs(groupPSize - pointsize) >= groupPSize * 0.15) // end this group and start a new one
-				{
-					textAttrGroups.push_back(FontAttrLabel(groupAttr, groupPSize, groupStart, groupSize));
-
-					groupStart += groupSize;
-					groupSize = 0;
-					groupAttr = txtAttr;
-					groupPSize = pointsize;
-				}
-
-				std::unique_ptr<char[]> text(itr->GetUTF8Text(tesseract::RIL_WORD));
-
-				if (text.get() != nullptr)
-				{
-					fullText += text.get();
-					groupSize += (uint16_t)strlen(text.get());
-				}
-
-				// if not the last word of the entire block of text
-				if (!itr->IsAtFinalElement(tesseract::RIL_BLOCK, tesseract::RIL_WORD))
-				{
-					// add appropriate whitespace (" " or "\n") depending on whether this is the end of a line or not
-					fullText += itr->IsAtFinalElement(tesseract::RIL_TEXTLINE, tesseract::RIL_WORD) ? "\n" : " ";
-					groupSize++;
-				}
-
-			} while (itr->Next(tesseract::RIL_WORD));
-
-			// the last group will not be appended in the loop because the text will end before the group does
-			textAttrGroups.push_back(FontAttrLabel(groupAttr, groupPSize, groupStart, groupSize));
+			return std::tuple<std::string, std::list<FontAttrLabel>>(fullText, textAttrGroups);
 		}
+
+		// we only care about isBold, isItalic, isUnderLined, and pointsize
+		bool isBold, isItalic, isUnderLined, isMonoSpace, isSerif, isSmallCaps;
+		int pointsize, font_id;
+
+		FontAttribute txtAttr;
+
+		auto getWordAttributes = [&isBold, &isItalic, &isUnderLined, 
+								  &isMonoSpace, &isSerif, &isSmallCaps,
+								  &pointsize, &font_id, &txtAttr, &itr]
+		{
+			itr->WordFontAttributes(&isBold, &isItalic, &isUnderLined, &isMonoSpace, &isSerif, &isSmallCaps, &pointsize, &font_id);
+			txtAttr = isBold ? BOLD : isItalic ? ITALIC : isUnderLined ? UNDER_LINED : PLAIN;
+		};
+
+		getWordAttributes();
+
+		FontAttribute groupAttr = txtAttr;
+		int groupPSize = pointsize;
+		uint16_t groupStart = 0;
+		uint16_t groupSize = 0;
+
+		// iterate through OCRed words
+		while (true)
+		{
+			std::unique_ptr<char[]> text(itr->GetUTF8Text(tesseract::RIL_WORD));
+
+			if (text.get() != nullptr)
+			{
+				fullText += text.get();
+				groupSize += (uint16_t)strlen(text.get());
+			}
+
+			// if not the last word of the entire block of text
+			if (!itr->IsAtFinalElement(tesseract::RIL_BLOCK, tesseract::RIL_WORD))
+			{
+				// add appropriate whitespace (" " or "\n") depending on whether this is the end of a line or not
+				fullText += itr->IsAtFinalElement(tesseract::RIL_TEXTLINE, tesseract::RIL_WORD) ? "\n" : " ";
+				groupSize++;
+			}
+			
+			// our loop condition
+			if (!itr->Next(tesseract::RIL_WORD)) break;
+
+			getWordAttributes();
+
+			// end this group and start a new one if needed
+			if (txtAttr != groupAttr || abs(groupPSize - pointsize) >= groupPSize * 0.15)
+			{
+				textAttrGroups.push_back(FontAttrLabel(groupAttr, groupPSize, groupStart, groupSize));
+
+				groupStart += groupSize;
+				groupSize = 0;
+				groupAttr = txtAttr;
+				groupPSize = pointsize;
+			}
+		}
+
+		// the last group will not be appended in the loop because the text will end before the group does
+		textAttrGroups.push_back(FontAttrLabel(groupAttr, groupPSize, groupStart, groupSize));
 
 		return std::tuple<std::string, std::list<FontAttrLabel>>(fullText, textAttrGroups);
 	}
