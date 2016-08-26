@@ -10,8 +10,10 @@
 
 #include <string>
 #include <list>
+#include <vector>
 #include <tuple>
 #include <memory>
+#include <functional>
 #include <stdexcept>
 
 enum FontAttribute
@@ -24,6 +26,9 @@ enum FontAttribute
 
 struct FontAttrLabel
 {
+	FontAttrLabel()
+	{ }
+
 	FontAttrLabel(FontAttribute attr, uint16_t point_size, uint16_t start, uint16_t length) :
 		attr(attr),
 		point_size(point_size),
@@ -37,14 +42,73 @@ struct FontAttrLabel
 	uint16_t length;
 };
 
+/*class FontAttrCollection
+{
+	std::vector<FontAttrLabel> attrCollection;
+	
+public:
+	FontAttrCollection(int start_sz = 10) :
+		attrCollection(start_sz)
+	{ }
+
+	inline void push_back(FontAttrLabel attrLabel)
+	{
+		attrCollection.push_back(attrLabel);
+	}
+
+	inline void push_back(FontAttrLabel&& attrLabel)
+	{
+		attrCollection.push_back(attrLabel);
+	}
+
+	inline size_t size()
+	{
+		return attrCollection.size();
+	}
+
+	inline void clear()
+	{
+		attrCollection.clear();
+	}
+
+	inline FontAttrLabel getLabelAtPoint(uint16_t index)
+	{
+		for (auto& i : attrCollection)
+		{
+			if (i.start <= index && i.start + i.length > index)
+			{
+				return i;
+			}
+		}
+	}
+
+	inline std::list<FontAttrLabel> getLabelsInSpan(uint16_t start, uint16_t length = 1)
+	{
+		std::list<FontAttrLabel> labels;
+
+		for (auto& i : attrCollection)
+		{
+			if (i.start + i.length > start && i.start <= start + length)
+			{
+				labels.push_back(i);
+			}
+		}
+
+		return labels;
+	}
+};*/
+
+
 // wrapper class for the tesseract api that only exposes necessary functionality
 // and in a memory managed way
 class TessAPI_Wrapper : public tesseract::TessBaseAPI
 {
 private:
+	std::function<std::string(std::string, float)> spellCheckCB = [](std::string token, float conf) { return token; };
+
 	// holds image data until it is no longer needed
-	bool recognizeNeeded = false;
 	Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic> img_data;
+
 public:
 	TessAPI_Wrapper() :
 		tesseract::TessBaseAPI()
@@ -76,6 +140,16 @@ public:
 		this->SetImage(flat.data(), img_data.rows(), img_data.cols(), 1, img_data.rows());
 	}
 
+	void RegisterSpellCheckCallback(const std::function<std::string(std::string, float)> &callback)
+	{
+		spellCheckCB = callback;
+	}
+
+	void RemoveSpellCheckCallback()
+	{
+		spellCheckCB = [](std::string token, float conf) { return token; };
+	}
+
 	std::tuple<std::string, std::list<FontAttrLabel>> GetTextWithAttrs()
 	{
 		this->Recognize(0);
@@ -84,13 +158,14 @@ public:
 		std::list<FontAttrLabel> textAttrGroups;
 		std::string fullText;
 
-		// check if iterator is invalid
+		// return if iterator is invalid
 		if (itr.get() == nullptr)
 		{
 			return std::tuple<std::string, std::list<FontAttrLabel>>(fullText, textAttrGroups);
 		}
 
 		// we only care about isBold, isItalic, isUnderLined, and pointsize
+		// these values are set by getWordAttributes() below
 		bool isBold, isItalic, isUnderLined, isMonoSpace, isSerif, isSmallCaps;
 		int pointsize, font_id;
 
@@ -118,8 +193,9 @@ public:
 
 			if (text.get() != nullptr)
 			{
-				fullText += text.get();
-				groupSize += (uint16_t)strlen(text.get());
+				std::string spellcheckedText = spellCheckCB(text.get(), itr->Confidence(tesseract::RIL_WORD));
+				fullText += spellcheckedText;
+				groupSize += (uint16_t)spellcheckedText.size();
 			}
 
 			// if not the last word of the entire block of text
@@ -153,7 +229,22 @@ public:
 		return std::tuple<std::string, std::list<FontAttrLabel>>(fullText, textAttrGroups);
 	}
 
-	std::string GetText()
+	/*std::string GetText()
+	{
+		this->Recognize(0);
+
+		std::unique_ptr<tesseract::ResultIterator> itr(this->GetIterator());
+		std::list<FontAttrLabel> textAttrGroups;
+		std::string fullText;
+
+		// return if iterator is invalid
+		if (itr.get() == nullptr)
+		{
+			return std::tuple<std::string, std::list<FontAttrLabel>>(fullText, textAttrGroups);
+		}
+	}*/
+
+	std::string GetText/*NoSpellCheck*/()
 	{
 		std::unique_ptr<char[]> text(this->GetUTF8Text());
 		if (text.get() != nullptr)

@@ -74,7 +74,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>C:\Users\ddeighan.AD\cpp_lib_dirs\include;C:\Python27\include;$(IncludePath)</IncludePath>
     <TargetExt>.pyd</TargetExt>
-    <LibraryPath>C:\Users\ddeighan.AD\cpp_lib_dirs\lib;C:\Python27\libs;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\Users\ddeighan.AD\tesseract_vs2015\Debug;C:\Python27\libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -101,7 +101,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>liblept168.lib;tesseract.lib;python27.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>liblept.lib;Ws2_32.lib;python27.lib;libtesseract.lib;libpng.lib;libtiff.lib;libwebp.lib;libjpeg.lib;giflib.lib;openjpeg.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
