@@ -1,4 +1,4 @@
-// TessBinding.cpp : Defines the entry point for the console application.
+// tessapi.cpp : Defines the entry point for the console application.
 //
 
 #include "TessAPI_Wrapper.h"
@@ -10,8 +10,8 @@
 
 namespace py = pybind11;
 
-PYBIND11_PLUGIN(TessBinding) {
-	py::module m("TessBinding", "tesseract api bindings DD");
+PYBIND11_PLUGIN(tessapi) {
+	py::module m("tessapi", "Tesseract API bindings for Python");
 
 	/*py::enum_<tesseract::PageSegMode>(m, "PageSegMode")
 		.value("PSM_OSD_ONLY", tesseract::PSM_OSD_ONLY)
