@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-from distutils.core import Extension
-from setuptools import setup
+from setuptools import setup, Extension
 
 tessapi = Extension("tessapi",
+                    language="c++",
                     extra_compile_args=["-std=c++11"],
                     include_dirs=["tessapi"],
+                    libraries=["tesseract", "lept"],
                     sources=["tessapi/tessapi.cpp"])
 
 setup(
