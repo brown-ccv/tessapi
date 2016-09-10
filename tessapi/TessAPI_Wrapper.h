@@ -6,7 +6,7 @@
 
 #include <tesseract/baseapi.h>
 #include <leptonica/allheaders.h>
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 
 #include <string>
 #include <list>
